@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Persentili — Field Intelligence Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--dark:#1A3C4A;--teal:#2D7A6A;--amber:#C47000;--grey:#F4F2EF;--white:#fff;--lteal:#D4EDEA;--lamb:#FFF0DC;--lsage:#E2EDE3;--lbrik:#FADBD8;--panel:340px}
+body{font-family:Arial,sans-serif;background:#0F2530;color:var(--dark);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--dark);color:#fff;padding:7px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--teal);flex-shrink:0}
+.logo{font-size:14px;font-weight:bold}.logo span{color:#9FE1CB}
+.sub{font-size:9px;color:#9FE1CB;opacity:.8}
+.tbr{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.badge{padding:3px 9px;border-radius:10px;font-size:10px;font-weight:bold}
+.ba{background:var(--amber);color:#fff}.bv{background:var(--teal);color:#fff}
+.btn{padding:5px 11px;border:none;border-radius:4px;cursor:pointer;font-size:11px;font-weight:bold;font-family:Arial}
+.bt{background:var(--teal);color:#fff}.ba2{background:var(--amber);color:#fff}
+.br{background:#8B2020;color:#fff}.bg{background:rgba(255,255,255,.15);color:#fff}
+.bt:hover{background:#1f5a4c}.ba2:hover{background:#a05c00}.br:hover{background:#6a1515}.bg:hover{background:rgba(255,255,255,.25)}
+.legend{background:#0F2530;padding:5px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:4px;color:#9FE1CB;font-size:10px;cursor:pointer;padding:2px 5px;border-radius:3px;user-select:none}
+.leg:hover{background:rgba(255,255,255,.08)}.leg.off{opacity:.3}
+.ldot{width:11px;height:11px;border-radius:50%;border:2px solid #fff;flex-shrink:0}
+.lcnt{background:rgba(255,255,255,.2);color:#fff;padding:0 4px;border-radius:8px;font-size:9px;font-weight:bold}
+.ldiv{width:1px;height:16px;background:rgba(255,255,255,.15)}
+.sel{background:rgba(255,255,255,.12);color:#9FE1CB;border:1px solid rgba(255,255,255,.2);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:10px;font-family:Arial;font-weight:bold;outline:none}
+.sel:hover{background:rgba(255,255,255,.22)}.sel option{background:#1A3C4A;color:#fff}
+.statsbar{background:rgba(0,0,0,.2);padding:3px 14px;display:flex;gap:14px;font-size:9px;color:#9FE1CB;flex-shrink:0;flex-wrap:wrap}
+.tabs{background:#0F2530;display:flex;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0}
+.tab{padding:6px 16px;color:#9FE1CB;font-size:11px;font-weight:bold;cursor:pointer;border-bottom:2px solid transparent}
+.tab:hover{background:rgba(255,255,255,.06)}.tab.active{color:#fff;border-bottom-color:var(--teal)}
+.main{display:flex;flex:1;overflow:hidden;position:relative}
+#mapWrap{display:flex;flex:1;overflow:hidden}
+#map{flex:1;min-width:0}
+#dbWrap{display:none;flex:1;overflow:auto;background:var(--grey);padding:14px}
+#setWrap{display:none;flex:1;overflow:auto;background:var(--grey);padding:14px}
+.panel{width:var(--panel);min-width:var(--panel);background:#fff;overflow-y:auto;border-left:2px solid var(--lteal);display:flex;flex-direction:column;flex-shrink:0}
+.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 16px;text-align:center;flex:1;color:#aaa}
+.ph-ico{font-size:36px;margin-bottom:10px}
+.shdr{padding:12px;color:#fff;position:sticky;top:0;z-index:3}
+.styp{display:inline-block;font-size:9px;font-weight:bold;padding:2px 7px;border-radius:8px;background:rgba(255,255,255,.25);margin-bottom:5px}
+.snm{font-size:14px;font-weight:bold;line-height:1.3;margin-bottom:3px}
+.sloc{font-size:10px;opacity:.8}
+.pbd{padding:10px 12px;flex:1}
+.isec{margin-bottom:10px}
+.istit{font-size:9px;font-weight:bold;text-transform:uppercase;color:var(--teal);border-bottom:1px solid var(--lteal);padding-bottom:3px;margin-bottom:5px;letter-spacing:.4px}
+.irow{display:flex;justify-content:space-between;align-items:flex-start;padding:3px 0;border-bottom:1px dashed #eee;font-size:11px;gap:8px}
+.ilbl{color:#666;flex-shrink:0;max-width:48%}.ival{font-weight:bold;color:var(--dark);text-align:right;word-break:break-word;font-size:11px}
+.ig{color:#3B6D11}.iw{color:var(--amber)}.ir{color:#8B2020}
+.sb-r{padding:4px 0;border-bottom:1px dashed #eee}
+.sb-t{display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px}
+.sb-bg{height:5px;background:#eee;border-radius:3px}.sb-fill{height:5px;border-radius:3px}
+.nbox{background:var(--grey);border-radius:3px;padding:7px;font-size:11px;line-height:1.5;color:#333;margin-top:4px;white-space:pre-wrap;word-break:break-word;min-height:30px}
+.tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.tag{font-size:9px;padding:2px 6px;border-radius:8px;font-weight:bold}
+.tg{background:var(--lsage);color:#3B6D11}.ta{background:var(--lamb);color:var(--amber)}.tr{background:var(--lbrik);color:#8B2020}.tb{background:#D6EAF8;color:#185FA5}
+.pact{display:flex;gap:5px;padding:8px 10px;border-top:1px solid var(--lteal);flex-shrink:0;background:#fff;position:sticky;bottom:0}
+.sw{padding:7px 10px;border-bottom:1px solid var(--lteal);background:#f9f9f9}
+.si{width:100%;padding:5px 9px;border:1px solid #ddd;border-radius:4px;font-size:11px}
+.si:focus{outline:none;border-color:var(--teal)}
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:6px}
+.gitem{position:relative}
+.gimg{aspect-ratio:1;object-fit:cover;border-radius:3px;cursor:pointer;width:100%;border:1px solid #eee;display:block}
+.gdel{position:absolute;top:2px;right:2px;background:rgba(139,32,32,.85);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:11px;line-height:18px;text-align:center;display:none}
+.gitem:hover .gdel{display:block}
+.doc-item{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed #eee;font-size:11px}
+.doc-nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--teal);cursor:pointer}
+.doc-nm:hover{text-decoration:underline}
+.doc-del{background:none;border:none;cursor:pointer;color:#8B2020;font-size:14px;display:none}
+.doc-item:hover .doc-del{display:block}
+.dbtb{width:100%;border-collapse:collapse;font-size:11px;background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.dbtb th{background:var(--dark);color:#fff;padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;white-space:nowrap}
+.dbtb td{padding:6px 10px;border-bottom:1px solid #eee;vertical-align:top}
+.dbtb tr:hover td{background:#f0f8ff;cursor:pointer}
+.dbtb tr:last-child td{border-bottom:none}
+.cpill{display:inline-block;padding:2px 7px;border-radius:8px;font-size:9px;font-weight:bold;color:#fff}
+.sc-chip{display:inline-block;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:bold}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.sc{background:#fff;border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.sc h3{font-size:12px;font-weight:bold;color:var(--dark);margin-bottom:10px;border-bottom:1px solid var(--lteal);padding-bottom:6px}
+.cr{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px}
+.cp{width:36px;height:24px;border:1px solid #ddd;border-radius:3px;cursor:pointer;padding:0}
+.crit-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.crit-inp{flex:1;padding:4px 7px;border:1px solid #ddd;border-radius:3px;font-size:11px}
+.crit-wt{width:50px;padding:4px;border:1px solid #ddd;border-radius:3px;font-size:11px;text-align:center}
+.crit-del{background:none;border:none;cursor:pointer;color:#8B2020;font-size:16px}
+.crit-add{background:none;border:1px dashed var(--teal);color:var(--teal);padding:4px 10px;border-radius:3px;cursor:pointer;font-size:11px;width:100%;margin-top:4px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.overlay.hidden{display:none}
+.modal{background:#fff;border-radius:8px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.mhdr{background:var(--dark);color:#fff;padding:12px 16px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+.mhdr h3{font-size:13px}.mcls{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;opacity:.7;line-height:1}
+.mcls:hover{opacity:1}
+.mbdy{padding:16px}.mftr{padding:10px 16px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:7px;position:sticky;bottom:0;background:#fff}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:10px;font-weight:bold;color:var(--dark);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select,.fg textarea{width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:Arial;background:var(--grey)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--teal);background:#fff}
+.fg textarea{resize:vertical;min-height:60px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fhint{font-size:9px;color:#888;margin-top:2px;font-style:italic}
+.sc-irow{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.sc-lbl{font-size:11px;flex:1;color:#444}.sc-num{width:48px;text-align:center;padding:4px;border:1px solid #ddd;border-radius:3px;font-size:12px;font-weight:bold}
+.sc-bg{width:80px;height:5px;background:#eee;border-radius:3px;overflow:hidden}.sc-fill{height:100%;border-radius:3px}
+.acwrap{position:relative}
+.aclist{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-top:none;border-radius:0 0 4px 4px;max-height:160px;overflow-y:auto;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.aci{padding:6px 10px;font-size:12px;cursor:pointer}.aci:hover{background:var(--lteal)}
+.toast{position:fixed;bottom:16px;right:16px;background:var(--dark);color:#fff;padding:9px 14px;border-radius:5px;font-size:12px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;border-left:4px solid var(--teal)}
+.toast.show{opacity:1}
+.dua{border:2px dashed #ddd;border-radius:4px;padding:10px;text-align:center;cursor:pointer;font-size:11px;color:#888;margin-top:4px}
+.dua:hover{border-color:var(--teal);color:var(--teal)}
+.pd-item{display:flex;align-items:center;justify-content:space-between;font-size:10px;padding:3px 6px;background:#f5f5f5;border-radius:3px;margin-bottom:3px}
+.pd-item button{background:none;border:none;cursor:pointer;color:#8B2020;font-size:12px}
+.pprof{width:70px;height:70px;border-radius:8px;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;font-size:28px;background:#f9f9f9;flex-shrink:0;overflow:hidden}
+.pprof img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+.transport-tooltip{
+  background:white !important;
+  border:2px solid #1A3C4A !important;
+  border-radius:6px !important;
+  padding:8px 12px !important;
+  font-size:11px !important;
+  box-shadow:0 4px 12px rgba(0,0,0,.2) !important;
+  max-width:280px;
+}
+.transport-tooltip::before{display:none}
+.stars{display:inline-flex;gap:1px;font-size:11px}
+@media(max-width:768px){:root{--panel:100vw}.panel{position:absolute;right:0;top:0;height:100%;z-index:10}.sg{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="logo">PERSENTILI <span>INTERNACIONAL</span></div>
+    <div class="sub">Field Intelligence Dashboard &middot; Tunisia Expansion &middot; Track 1 + Track 2</div>
+  </div>
+  <div class="tbr">
+    <span class="badge bv" id="modeBadge">&#128065; VIEWER</span>
+    <button class="btn bg" onclick="openLogin()" id="loginBtn">&#128272; Admin</button>
+    <button class="btn bt" onclick="openAdd()" id="addBtn" style="display:none">+ Add Site</button>
+    <button class="btn bg" onclick="doExportJSON()">&#11015; Export</button>
+    <button class="btn bg" onclick="triggerImport()">&#11014; Import</button>
+    <button class="btn bg" onclick="doExportCSV()">&#128202; Export CSV</button>
+    <button class="btn bg" onclick="document.getElementById('xlsImportInp').click()" title="Import sites from Excel/CSV">&#128202; Import CSV</button>
+  </div>
+</div>
+
+<div class="legend">
+  <span style="color:#9FE1CB;font-size:10px;font-weight:bold">FILTER:</span>
+  <div class="leg" id="leg-factory" onclick="toggleCat('factory')">
+    <div class="ldot" id="dot-factory" style="background:#DC2626"></div>
+    <span>Own Factory</span><span class="lcnt" id="cnt-factory">0</span>
+  </div>
+  <div class="ldiv"></div>
+  <div class="leg" id="leg-sub" onclick="toggleCat('sub')">
+    <div class="ldot" id="dot-sub" style="background:#2563EB"></div>
+    <span>Subcontractors</span><span class="lcnt" id="cnt-sub">0</span>
+  </div>
+  <div class="ldiv"></div>
+  <div class="leg" id="leg-supplier" onclick="toggleCat('supplier')">
+    <div class="ldot" id="dot-supplier" style="background:#EA580C"></div>
+    <span>Suppliers</span><span class="lcnt" id="cnt-supplier">0</span>
+  </div>
+  <div class="ldiv"></div>
+  <div class="leg" id="leg-elim" onclick="toggleCat('elim')">
+    <div class="ldot" id="dot-elim" style="background:#16A34A"></div>
+    <span>Eliminated</span><span class="lcnt" id="cnt-elim">0</span>
+  </div>
+  <div class="ldiv"></div>
+  <div class="leg" id="leg-other" onclick="toggleCat('other')">
+    <div class="ldot" id="dot-other" style="background:#7C3AED"></div>
+    <span>Other</span><span class="lcnt" id="cnt-other">0</span>
+  </div>
+  <div class="ldiv"></div>
+  <select class="sel" onchange="flyRegion(this.value)">
+    <option value="all">&#127757; All Tunisia</option>
+    <option value="monastir">&#128205; Monastir</option>
+    <option value="sousse">&#128205; Sousse</option>
+    <option value="mahdia">&#128205; Mahdia</option>
+    <option value="sfax">&#128205; Sfax</option>
+    <option value="tunis">&#128205; Tunis</option>
+  </select>
+  <div class="ldiv"></div>
+  <select class="sel" id="layerSel" onchange="setLayer(this.value)">
+    <option value="street">&#128506; Street Map</option>
+    <option value="satellite">&#128752; Satellite</option>
+    <option value="hybrid">&#127970; Hybrid</option>
+  </select>
+  <div class="ldiv"></div>
+  <button id="transpBtn" onclick="toggleTransport()" class="sel" style="cursor:pointer;font-size:10px;padding:4px 9px;background:rgba(255,255,255,.3)">&#128652; Transport Lines ON</button>
+  <div class="ldiv"></div>
+  <span style="color:#9FE1CB;font-size:9px;opacity:.5" id="savedLbl"></span>
+</div>
+
+<div class="statsbar">
+  <span>&#128205; <b id="stTotal">0</b> sites</span>
+  <span>&#127981; <b id="stF">0</b> factory</span>
+  <span>&#129525; <b id="stS">0</b> subcontractors</span>
+  <span>&#128230; <b id="stSup">0</b> suppliers</span>
+  <span style="margin-left:auto">Saved: <b id="stSaved">not yet</b></span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tab-map" onclick="showView('map')">&#128506; Map</div>
+  <div class="tab" id="tab-db" onclick="showView('db')">&#128203; Database</div>
+  <div class="tab" id="tab-set" onclick="showView('set')">&#9881;&#65039; Settings</div>
+</div>
+
+<div class="main">
+  <div id="mapWrap">
+    <div id="map"></div>
+    <div class="panel" id="sidePanel">
+      <div class="sw">
+        <input class="si" id="searchInp" placeholder="&#128269; Search sites, tags, city..." oninput="doSearch(this.value)">
+      </div>
+      <div id="panelContent">
+        <div class="ph">
+          <div class="ph-ico">&#128205;</div>
+          <p><b>Click any marker</b> on the map to see details.</p>
+          <br>
+          <p style="font-size:10px">&#128308; Own Factory &nbsp;&#128309; Subcontractors<br>&#128312; Suppliers &nbsp;&#128994; Eliminated &nbsp;&#128995; Other</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="dbWrap">
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+      <b style="font-size:13px">Site Database</b>
+      <select id="dbCat" onchange="renderDB()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;background:#fff">
+        <option value="">All Categories</option>
+        <option value="factory">Own Factory</option>
+        <option value="sub">Subcontractors</option>
+        <option value="supplier">Suppliers</option>
+        <option value="elim">Eliminated</option>
+        <option value="other">Other</option>
+      </select>
+      <select id="dbSt" onchange="renderDB()" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:11px;background:#fff">
+        <option value="">All Statuses</option>
+        <option value="shortlisted">Shortlisted</option>
+        <option value="active">Under Review</option>
+        <option value="contracted">Contracted</option>
+        <option value="eliminated">Eliminated</option>
+      </select>
+      <button class="btn bt" onclick="doExportCSV()">&#128202; Export Excel</button>
+      <span id="dbCnt" style="font-size:11px;color:#666"></span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="dbtb">
+        <thead><tr>
+          <th>#</th><th>Name</th><th>Category</th><th>Status</th>
+          <th>City</th><th>Surface m&sup2;</th><th>Rent TND/mo</th>
+          <th>Score</th><th>Contact</th><th>Date</th><th>Tags</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="dbBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="setWrap">
+    <div class="sg">
+      <div class="sc">
+        <h3>&#127912; Category Colors</h3>
+        <div class="cr"><span style="flex:1;color:#444">&#128308; Own Factory</span><input type="color" class="cp" id="col-factory" onchange="applyColor('factory',this.value)"></div>
+        <div class="cr"><span style="flex:1;color:#444">&#128309; Subcontractor</span><input type="color" class="cp" id="col-sub" onchange="applyColor('sub',this.value)"></div>
+        <div class="cr"><span style="flex:1;color:#444">&#128312; Supplier</span><input type="color" class="cp" id="col-supplier" onchange="applyColor('supplier',this.value)"></div>
+        <div class="cr"><span style="flex:1;color:#444">&#128994; Eliminated</span><input type="color" class="cp" id="col-elim" onchange="applyColor('elim',this.value)"></div>
+        <div class="cr"><span style="flex:1;color:#444">&#128995; Other</span><input type="color" class="cp" id="col-other" onchange="applyColor('other',this.value)"></div>
+        <button class="btn bg" style="color:#333;margin-top:8px" onclick="resetColors()">&#8634; Reset defaults</button>
+      </div>
+      <div class="sc">
+        <h3>&#11088; Scoring Criteria</h3>
+        <p style="font-size:10px;color:#888;margin-bottom:8px">Define score axes per category. These calculate star ratings on the map.</p>
+        <select id="critCat" onchange="renderCrit()" style="width:100%;padding:5px;border:1px solid #ddd;border-radius:4px;font-size:11px;margin-bottom:10px">
+          <option value="factory">Own Factory</option>
+          <option value="sub">Subcontractors</option>
+          <option value="supplier">Suppliers</option>
+          <option value="elim">Eliminated</option>
+          <option value="other">Other</option>
+        </select>
+        <div id="critList"></div>
+        <button class="crit-add" onclick="addCrit()">+ Add Criterion</button>
+        <button class="btn bt" style="margin-top:8px;width:100%" onclick="saveCrit()">&#128190; Save Criteria</button>
+      </div>
+      <div class="sc">
+        <h3>&#128272; Admin Password</h3>
+        <div class="fg"><label>Current Password</label><input type="password" id="curPw" placeholder="Current password"></div>
+        <div class="fg"><label>New Password</label><input type="password" id="newPw" placeholder="New password (min 6 chars)"></div>
+        <button class="btn bt" onclick="changePw()">Update Password</button>
+      </div>
+      <div class="sc">
+        <h3>&#128190; Data Management</h3>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <button class="btn bt" onclick="doExportJSON()">&#11015; Export JSON backup</button>
+          <button class="btn ba2" onclick="triggerImport()">&#11014; Import JSON</button>
+          <button class="btn bg" style="color:#333" onclick="doExportCSV()">&#128202; Export to Excel (CSV)</button>
+          <button class="btn br" style="margin-top:6px" onclick="doReset()">&#9888; Reset to defaults</button>
+          <hr style="margin:10px 0;border:none;border-top:1px solid #eee">
+          <p style="font-size:10px;font-weight:bold;color:var(--teal);margin-bottom:6px">Import from Excel/CSV</p>
+          <p style="font-size:9px;color:#888;margin-bottom:8px">1. Download template &rarr; 2. Fill in Excel &rarr; 3. Save as CSV &rarr; 4. Import</p>
+          <button class="btn bt" onclick="downloadTemplate()">&#128462; Download CSV Template</button>
+          <button class="btn ba2" style="margin-top:6px" onclick="document.getElementById('xlsImportInp').click()">&#128202; Import CSV / Excel</button>
+        </div>
+        <p style="font-size:9px;color:#aaa;margin-top:10px">Phase 2: real-time shared database via Supabase — all users see changes live.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="overlay hidden" id="loginOv">
+  <div class="modal" style="max-width:340px">
+    <div class="mhdr"><h3>&#128272; Admin Login</h3><button class="mcls" onclick="closeM('loginOv')">&#215;</button></div>
+    <div class="mbdy" style="text-align:center">
+      <div style="font-size:40px;margin:8px 0">&#127981;</div>
+      <p style="font-size:12px;color:#666;margin-bottom:14px">Enter admin password to enable editing</p>
+      <div class="fg"><input type="password" id="pwInp" onkeydown="if(event.key==='Enter')tryLogin()" placeholder="Password..." style="text-align:center;letter-spacing:2px"></div>
+      <p id="loginErr" style="color:#8B2020;font-size:11px;display:none;margin-top:6px">Incorrect password.</p>
+    </div>
+    <div class="mftr"><button class="btn bg" style="color:#333" onclick="closeM('loginOv')">Cancel</button><button class="btn bt" onclick="tryLogin()">Login</button></div>
+  </div>
+</div>
+
+<!-- SITE FORM MODAL -->
+<div class="overlay hidden" id="siteOv">
+  <div class="modal">
+    <div class="mhdr"><h3 id="fTitle">Add Site</h3><button class="mcls" onclick="closeM('siteOv')">&#215;</button></div>
+    <div class="mbdy">
+      <div class="fg">
+        <label>Site Name *</label>
+        <input id="f_name" placeholder="ex: Graziano Factory — Kalaa Kebira">
+      </div>
+      <!-- Profile photo -->
+      <div class="fg">
+        <label>Profile / Cover Photo</label>
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <div class="pprof" id="profThumb">&#127981;</div>
+          <div style="flex:1">
+            <input id="f_profUrl" placeholder="Paste image URL (https://...)" style="width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:4px;font-size:12px;margin-bottom:5px" oninput="prevProf(this.value)">
+            <input type="file" id="f_profFile" accept="image/*" onchange="upProf(event)" style="font-size:11px">
+          </div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>Category *</label>
+          <select id="f_cat" onchange="buildScores()">
+            <option value="factory">Own Factory Candidate</option>
+            <option value="sub">Subcontractor</option>
+            <option value="supplier">Supplier</option>
+            <option value="elim">Visited / Eliminated</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Status</label>
+          <select id="f_status">
+            <option value="active">Under Review</option>
+            <option value="shortlisted">Shortlisted</option>
+            <option value="contracted">Contracted</option>
+            <option value="eliminated">Eliminated</option>
+            <option value="visited">Visited — Pending</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Latitude *</label><input type="number" id="f_lat" placeholder="35.773" step="0.00001"></div>
+        <div class="fg"><label>Longitude *</label><input type="number" id="f_lng" placeholder="10.693" step="0.00001"></div>
+      </div>
+      <p class="fhint" style="margin:-8px 0 10px">&#128161; Click on the map (admin mode) to auto-fill coordinates</p>
+      <div class="frow">
+        <div class="fg">
+          <label>City</label>
+          <div class="acwrap">
+            <input id="f_city" placeholder="Start typing..." autocomplete="off" oninput="acSrc(this.value,'f_city','acL1')" onblur="setTimeout(function(){closeAC('acL1')},150)">
+            <div class="aclist hidden" id="acL1"></div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Governorate</label>
+          <div class="acwrap">
+            <input id="f_gov" placeholder="ex: Monastir, Sousse..." autocomplete="off" oninput="acSrc(this.value,'f_gov','acL2')" onblur="setTimeout(function(){closeAC('acL2')},150)">
+            <div class="aclist hidden" id="acL2"></div>
+          </div>
+        </div>
+      </div>
+      <hr style="margin:10px 0;border:none;border-top:1px solid #eee">
+      <p style="font-size:10px;font-weight:bold;color:var(--teal);margin-bottom:8px;text-transform:uppercase">Contact Information</p>
+      <div class="frow">
+        <div class="fg"><label>Company Name</label><input id="f_company" placeholder="ex: Nasr Ben Younes SARL"></div>
+        <div class="fg"><label>Contact Person</label><input id="f_person" placeholder="ex: Nasr Ben Younes"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Phone</label><input id="f_phone" placeholder="+216 XX XXX XXX" type="tel"></div>
+        <div class="fg"><label>Email</label><input id="f_email" placeholder="contact@company.tn" type="email"></div>
+      </div>
+      <div class="fg"><label>Visit Date</label><input type="date" id="f_date"></div>
+      <hr style="margin:10px 0;border:none;border-top:1px solid #eee">
+      <p style="font-size:10px;font-weight:bold;color:var(--teal);margin-bottom:8px;text-transform:uppercase">Operational Details</p>
+      <div class="frow">
+        <div class="fg"><label>Surface (m&sup2;)</label><input type="number" id="f_surface" placeholder="2300"></div>
+        <div class="fg"><label>Monthly Rent (TND)</label><input type="number" id="f_rent" placeholder="13750"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Workforce / FTE</label><input type="number" id="f_fte" placeholder="200"></div>
+        <div class="fg"><label>Know-how /100</label><input type="number" id="f_kh" placeholder="65" min="0" max="100"></div>
+      </div>
+      <div class="fg"><label>Machines Available</label><input id="f_mach" placeholder="ex: Boiler, transformer, fusing machine"></div>
+      <div class="fg"><label>Works / Renovation Needed</label><input id="f_works" placeholder="ex: Electrical upgrade, epoxy floor"></div>
+      <div class="fg"><label>Est. CAPEX Works (TND)</label><input type="number" id="f_capex" placeholder="482000"></div>
+      <hr style="margin:10px 0;border:none;border-top:1px solid #eee">
+      <p style="font-size:10px;font-weight:bold;color:var(--teal);margin-bottom:8px;text-transform:uppercase">Scoring</p>
+      <div id="scoreFields"></div>
+      <hr style="margin:10px 0;border:none;border-top:1px solid #eee">
+      <div class="fg"><label>Notes & Observations</label><textarea id="f_notes" rows="4" placeholder="Transport access, competition, advantages, concerns..."></textarea></div>
+      <div class="fg"><label>Tags (comma separated)</label><input id="f_tags" placeholder="ex: dock available, ICS compliant, stretch capable"></div>
+      <hr style="margin:10px 0;border:none;border-top:1px solid #eee">
+      <p style="font-size:10px;font-weight:bold;color:var(--teal);margin-bottom:8px;text-transform:uppercase">Photos</p>
+      <div class="fg">
+        <label>Photo URLs (one per line)</label>
+        <textarea id="f_photoUrls" rows="2" placeholder="https://photos.app.goo.gl/..."></textarea>
+        <p class="fhint">Google Photos, Drive, or direct image URLs</p>
+      </div>
+      <div class="fg">
+        <label>Upload from Device</label>
+        <input type="file" id="f_photoFile" accept="image/*" multiple onchange="upPhotos(event)" style="font-size:11px">
+      </div>
+      <div id="photoPreview" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px"></div>
+      <hr style="margin:10px 0;border:none;border-top:1px solid #eee">
+      <p style="font-size:10px;font-weight:bold;color:var(--teal);margin-bottom:8px;text-transform:uppercase">Documents (PDF, Word, Excel)</p>
+      <div class="dua" onclick="document.getElementById('f_docFile').click()">&#128206; Click to upload PDF, Word or Excel files</div>
+      <input type="file" id="f_docFile" accept=".pdf,.doc,.docx,.xlsx,.xls" multiple style="display:none" onchange="upDocs(event)">
+      <div id="docPreview"></div>
+    </div>
+    <div class="mftr">
+      <button class="btn br" id="fDelBtn" onclick="deleteSite()" style="display:none;margin-right:auto">&#128465; Delete</button>
+      <button class="btn bg" style="color:#333" onclick="closeM('siteOv')">Cancel</button>
+      <button class="btn ba2" onclick="saveSite()">&#128190; Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO VIEWER / CAROUSEL -->
+<div class="overlay hidden" id="photoOv">
+  <div class="modal" style="max-width:740px">
+    <div class="mhdr">
+      <h3 id="phTitle">Photo</h3>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="phCounter" style="font-size:11px;color:#9FE1CB"></span>
+        <button class="mcls" onclick="closeM('photoOv')">&#215;</button>
+      </div>
+    </div>
+    <div class="mbdy" style="text-align:center;position:relative;padding:10px">
+      <!-- Prev button -->
+      <button id="phPrev" onclick="carouselPrev()" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:20px;cursor:pointer;z-index:5;display:none">&#8249;</button>
+      <!-- Photo -->
+      <img id="phImg" src="" style="max-width:100%;max-height:460px;border-radius:5px;display:block;margin:0 auto" onerror="this.src=''">
+      <!-- Next button -->
+      <button id="phNext" onclick="carouselNext()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:20px;cursor:pointer;z-index:5;display:none">&#8250;</button>
+    </div>
+    <!-- Thumbnail strip -->
+    <div id="phThumbs" style="display:flex;gap:4px;overflow-x:auto;padding:8px 16px;background:#f9f9f9;border-top:1px solid #eee"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="importInp" accept=".json" style="display:none" onchange="doImport(event)">
+<input type="file" id="xlsImportInp" accept=".csv,.xlsx,.xls" style="display:none" onchange="doCSVImport(event)">
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════
+var SK='pf_v4_sites', CK='pf_v4_cfg', PK='pf_v4_pw', SVK='pf_v4_saved';
+var isAdmin=false, selectedId=null, editingId=null, map=null;
+var markers={}, hiddenCats=[], pendingPhotos=[], pendingDocs=[], pendingProf='';
+var layers={}, curLayer='street';
+
+var DCOLORS={factory:'#DC2626',sub:'#2563EB',supplier:'#EA580C',elim:'#16A34A',other:'#7C3AED'};
+var DCRIT={
+  factory:[{key:'mo',label:'Workforce Access',weight:10},{key:'log',label:'Logistics',weight:8},{key:'infra',label:'Infrastructure',weight:8},{key:'cost',label:'Cost Score',weight:8},{key:'flex',label:'Flexibility',weight:5}],
+  sub:[{key:'qual',label:'Quality/Savoir-faire',weight:10},{key:'cap',label:'Capacity',weight:9},{key:'mo',label:'Workforce',weight:7},{key:'comp',label:'ICS Compliance',weight:8},{key:'lead',label:'Lead Time',weight:6}],
+  supplier:[{key:'price',label:'Price',weight:10},{key:'qual',label:'Quality',weight:9},{key:'lead',label:'Lead Time',weight:8},{key:'moq',label:'MOQ Flexibility',weight:6},{key:'svc',label:'After-Sales',weight:5}],
+  elim:[{key:'mo',label:'Workforce',weight:5},{key:'infra',label:'Infrastructure',weight:5},{key:'cost',label:'Cost',weight:5}],
+  other:[{key:'overall',label:'Overall',weight:10}]
+};
+var CITIES=['Tunis','Ariana','Ben Arous','Manouba','Nabeul','Hammamet','Kelibia','Zaghouan','Bizerte','Menzel Bourguiba','Beja','Jendouba','Le Kef','Siliana','Sousse','Monastir','Msaken','Ksar Hellal','Moknine','Jemmel','Sahline','Kalaa Kebira','Kalaa Sghira','Akouda','Hammam Sousse','Kantaoui','Mahdia','Ksour Essaf','El Djem','Sfax','Sakiet Ezzit','Sakiet Eddaier','Gafsa','Tozeur','Kebili','Tataouine','Medenine','Zarzis','Houmt Souk','Kairouan','Kasserine','Sidi Bouzid','Gabes','Matmata','Djerba','Grombalia','Messadine','Khniss','Frina','Bembla','Ouardanine','Sayada','Lamta','Teboulba','Bekalta','Zeramdine','Rades','Megrine','Hammam Lif','La Marsa','Carthage','La Goulette','Le Bardo','Ettadhamen','Fouchana','Mornag','Sidi Bou Said','Sidi Bou Ali','Hergla','Enfidha','Bouficha'];
+var REGIONS={all:{lat:35.60,lng:10.70,z:9},monastir:{lat:35.77,lng:10.80,z:12},sousse:{lat:35.83,lng:10.64,z:12},mahdia:{lat:35.50,lng:11.06,z:12},sfax:{lat:34.74,lng:10.76,z:12},tunis:{lat:36.82,lng:10.18,z:12}};
+var STLBL={active:'Under Review',shortlisted:'Shortlisted',contracted:'Contracted',eliminated:'Eliminated',visited:'Visited'};
+var CATLBL={factory:'Own Factory',sub:'Subcontractor',supplier:'Supplier',elim:'Eliminated',other:'Other'};
+
+function loadPw(){return localStorage.getItem(PK)||'persentili2026';}
+
+// ═══════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════
+function getDefaults(){
+  return [
+    {id:'s1',name:'Graziano Factory — Kalaa Kebira',cat:'factory',status:'shortlisted',lat:35.90068,lng:10.53151,city:'Kalaa Kebira',gov:'Sousse',company:'',person:'',phone:'',email:'',date:'2026-07-24',surface:2300,rent:14008,fte:200,kh:65,mach:'Boiler, electrical transformer, fusing machine',works:'Electrical upgrade, epoxy floor, partition walls, LED lighting',capex:482000,scores:{mo:8,log:7,infra:5,cost:8},notes:'Former jacket & trouser factory. 200 FTE experienced workforce immediately available. Owner ready to sell machines (boiler, transformer, thermocollage). Good transport: bus + louage from Hammamet, Sousse, Akouda, Sidi Bou Ali, Hergla, Kalaa Kebira. Old building needing renovation. Machines rachetables = CAPEX saving opportunity.',tags:['machines available','experienced MO','bus access','renovation needed'],photos:[],docs:[],profile:''},
+    {id:'s2',name:'Sahline D1+D2 — Route Sahline-Sousse',cat:'factory',status:'shortlisted',lat:35.77281,lng:10.69335,city:'Sahline',gov:'Monastir',company:'Nasr Ben Younes SARL',person:'Nasr Ben Younes',phone:'',email:'',date:'2026-07-24',surface:3000,rent:13750,fte:0,kh:0,mach:'None — new build',works:'External boiler room 15m2, IT conduits, epoxy floor, loading docks',capex:316000,scores:{mo:8,log:8,infra:8,cost:8,flex:10},notes:'2x1100m2 new industrial depots D1+D2. Fully customisable to our specs. Architect Sofiene Omrane on site. 1000m2 additional land available for extension. Competition nearby: Lafuma, Alsico, Calzedonia planned 1km (ex-Benetton site). D1+D2 layout designed for Persentili. RECOMMENDED SITE.',tags:['new build','customisable','extension land','recommended','Inditex-ready'],photos:[],docs:[],profile:''},
+    {id:'s3',name:'Technopole Monastir — Neopark ZI',cat:'factory',status:'active',lat:35.72257,lng:10.74698,city:'Monastir',gov:'Monastir',company:'Technopole Monastir',person:'',phone:'',email:'',date:'2026-07-01',surface:2500,rent:25000,fte:0,kh:0,mach:'None',works:'Fire safety permit required, IT conduits, epoxy floor',capex:282000,scores:{mo:4,log:9,infra:9,cost:4},notes:'Premium new industrial zone. Architect plan Msolli received. Best infrastructure + logistics (8km Monastir port, 12km airport). ISSUE: fire safety permit (Protection Civile) = +2-4 month delay. Difficult workforce access (40/100). Highest rent.',tags:['premium infra','permit required','high rent','difficult MO access'],photos:[],docs:[],profile:''},
+    {id:'s4',name:'Messadine Industrial Zone',cat:'factory',status:'active',lat:35.7260,lng:10.6450,city:'Messadine',gov:'Sousse',company:'',person:'',phone:'',email:'',date:'2026-07-15',surface:0,rent:0,fte:0,kh:0,mach:'Unknown',works:'To assess on site visit',capex:0,scores:{mo:9,log:9,infra:7,cost:6},notes:'Very densely populated. Best workforce pool (90/100 MO, 90/100 transport). Strong textile culture. Risk: strong competition for recruitment (Inditex subcontractors, Decathlon present). Rent and premises to confirm.',tags:['best MO pool','strong competition','rent to confirm'],photos:[],docs:[],profile:''},
+    {id:'s5',name:'Khniss — Monastir North',cat:'factory',status:'active',lat:35.7650,lng:10.7900,city:'Khniss',gov:'Monastir',company:'',person:'',phone:'',email:'',date:'',surface:0,rent:0,fte:0,kh:0,mach:'Unknown',works:'To assess',capex:0,scores:{mo:7,log:8,infra:7,cost:7},notes:'Peri-urban zone north Monastir. Close to Monastir port (~5km). Less competition than Messadine. Premises availability to confirm. Scores estimated.',tags:['close to port','estimated scores','visit required'],photos:[],docs:[],profile:''},
+    {id:'s6',name:'Frina — Monastir North-East',cat:'factory',status:'active',lat:35.7950,lng:10.8100,city:'Frina',gov:'Monastir',company:'',person:'',phone:'',email:'',date:'',surface:0,rent:0,fte:0,kh:0,mach:'Unknown',works:'To assess',capex:0,scores:{mo:7,log:8,infra:7,cost:7},notes:'Quiet zone, less competition. Close to Monastir port. Estimated scores — field visit required.',tags:['quiet zone','less competition','visit required'],photos:[],docs:[],profile:''},
+    {id:'s7',name:'CM TEX — Jemmel (Machine Supplier)',cat:'supplier',status:'contracted',lat:35.6206,lng:10.7111,city:'Jemmel',gov:'Monastir',company:'STE CM TEX',person:'',phone:'',email:'',date:'2026-07-31',surface:0,rent:0,fte:0,kh:0,mach:'Siruba, Stone ST-781D, Stone ST-1377D, Fingtex MT-430D, Fingtex MT-1508, Comel boiler+irons',works:'',capex:0,scores:{price:8,qual:7,lead:8,moq:7,svc:7},notes:'Devis 20260084 (NEW) 49936 TND TTC — 13 machines. Key: Stone boutonniere NEW 3900 TND (better than Brother OCC 6000). Stone pose bouton NEW 2200 TND. Fingtex ceintureuse NEW 4600 TND. Comel boiler+2 irons 4600 TND = excellent. ORDER BOILER NOW.\nDevis 20260085 (OCC) 38253 TND TTC — 9 machines.',tags:['quotes received','Stone automates','boiler urgent'],photos:[],docs:[],profile:''},
+    {id:'s8',name:'Takassim Confection — Machine Supplier',cat:'supplier',status:'active',lat:35.7800,lng:10.7200,city:'Monastir Region',gov:'Monastir',company:'Takassim Confection',person:'',phone:'',email:'',date:'2026-07-31',surface:0,rent:0,fte:0,kh:0,mach:'Brother, Juki, Durkopp Adler, Jack, Siruba — second hand volume',works:'',capex:0,scores:{price:9,qual:6,lead:7,moq:9,svc:6},notes:'Best prices for volume basic sewing machines:\n18x 1-needle lockstitch: 900 TND each = 16200 TND\n25x Durkopp Adler with puller: 1700 TND each = 42500 TND\n15x Overlock 4T Juki/Siruba: 900 TND = 13500 TND\nStrategy: Takassim for basic machines, CM TEX for automates.',tags:['OCC machines','best volume price','Durkopp Adler'],photos:[],docs:[],profile:''},
+    {id:'s9',name:'Shishi Zhicheng — Cutting System China',cat:'supplier',status:'active',lat:24.8801,lng:118.6826,city:'Jinjiang, Quanzhou',gov:'Fujian Province',company:'Shishi Zhicheng Garment Machinery Co.',person:'Sophia',phone:'+86 18359899188',email:'shishi@zhichengmach.com',date:'2026-07-29',surface:0,rent:0,fte:0,kh:0,mach:'2x Full-servo spreading head 160cm, 20x Air flotation tables 12m, Cutting robot, 24m rail',works:'',capex:0,scores:{price:9,qual:6,lead:7,moq:8,svc:5},notes:'FOB quote 29/07/2026:\n2x spreading heads: $19220\n20x air tables 12m: $3560\n24m rail: $912\nCutting robot W1.6m x L3m: $35500\nTOTAL FOB: $59192\n\nCRITICAL PENDING: travel length (3m stated vs 12m table needed). Email sent. Also pending: AccuNest PLT compatibility + Tunisia references. DO NOT ORDER until confirmed.',tags:['China FOB','cutting robot','PENDING clarification','AccuNest PLT','HOLD'],photos:[],docs:[],profile:''},
+    {id:'s10',name:'Ex-Benetton Facility — Sahline Equipment',cat:'other',status:'active',lat:35.7700,lng:10.6900,city:'Sahline',gov:'Monastir',company:'',person:'Via Nasr Ben Younes',phone:'',email:'',date:'2026-08-01',surface:0,rent:0,fte:0,kh:0,mach:'Forklifts, warehouse racks, AC units, fire separations, roll trolleys — FOR SALE',works:'',capex:0,scores:{},notes:'Former Benetton facility ~1km from Sahline D1+D2. Ready to sell equipment. Available: forklifts, pallet racks, AC equipment, fire separation systems, roll trolleys. Prices TBD. Potential CAPEX saving: 30000-80000 TND. GET INVENTORY AND PRICES ASAP.',tags:['equipment for sale','Benetton','forklifts','racks','prices pending'],photos:[],docs:[],profile:''}
+  ];
+}
+
+var cfg={colors:Object.assign({},DCOLORS),criteria:JSON.parse(JSON.stringify(DCRIT))};
+var sites=[];
+
+function loadAll(){
+  try{var c=localStorage.getItem(CK);if(c){var p=JSON.parse(c);cfg.colors=Object.assign({},DCOLORS,p.colors||{});cfg.criteria=Object.assign({},DCRIT,p.criteria||{});}}catch(e){}
+  try{var s=localStorage.getItem(SK);if(s){sites=JSON.parse(s);return;}}catch(e){}
+  sites=getDefaults();
+}
+
+function persist(){
+  try{
+    localStorage.setItem(SK,JSON.stringify(sites));
+    localStorage.setItem(CK,JSON.stringify(cfg));
+    var t=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem(SVK,t);
+    var el=document.getElementById('savedLbl');if(el)el.textContent='Saved: '+t;
+    var el2=document.getElementById('stSaved');if(el2)el2.textContent=t;
+  }catch(e){toast('Warning: storage issue');}
+}
+
+// ═══════════════════════════════════════════════════
+// MAP INIT
+// ═══════════════════════════════════════════════════
+function initMap(){
+  map=L.map('map',{zoomControl:true}).setView([35.78,10.70],10);
+  layers.street=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19,subdomains:'abcd'});
+  layers.satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'&copy; Esri &copy; DigitalGlobe',maxZoom:19});
+  layers.labels=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,opacity:.85});
+  layers.street.addTo(map);
+  curLayer='street';
+  map.on('click',function(e){
+    if(!isAdmin)return;
+    document.getElementById('f_lat').value=e.latlng.lat.toFixed(5);
+    document.getElementById('f_lng').value=e.latlng.lng.toFixed(5);
+    toast('Coords set: '+e.latlng.lat.toFixed(4)+', '+e.latlng.lng.toFixed(4));
+  });
+  renderMarkers();
+
+  // ── TRANSPORT LINES ──────────────────────────────────────────
+  drawTransportLines();
+}
+
+function setLayer(type){
+  if(layers[curLayer])map.removeLayer(layers[curLayer]);
+  if(curLayer==='satellite')map.removeLayer(layers.labels);
+  layers[type].addTo(map);
+  if(type==='satellite'){layers.labels.addTo(map);}
+  curLayer=type;
+}
+
+function flyRegion(key){
+  var r=REGIONS[key];if(!r)return;
+  map.flyTo([r.lat,r.lng],r.z,{animate:true,duration:1.2});
+}
+
+// ═══════════════════════════════════════════════════
+// SCORING & STARS
+// ═══════════════════════════════════════════════════
+function calcScore(site){
+  var crits=cfg.criteria[site.cat]||DCRIT[site.cat]||[];
+  if(!crits.length||!site.scores)return 0;
+  var num=0,den=0;
+  for(var i=0;i<crits.length;i++){
+    var v=site.scores[crits[i].key];
+    if(v&&v>0){num+=v*crits[i].weight;den+=crits[i].weight*10;}
+  }
+  return den>0?(num/den)*10:0;
+}
+
+function starHtml(n){
+  var h='';
+  for(var i=1;i<=5;i++){
+    if(i<=Math.floor(n/2))h+='&#9733;';
+    else if(i===Math.ceil(n/2)&&n%2===1)h+='&#189;';
+    else h+='&#9734;';
+  }
+  return h;
+}
+
+// ═══════════════════════════════════════════════════
+// MARKERS
+// ═══════════════════════════════════════════════════
+function makeIcon(site){
+  var col=cfg.colors[site.cat]||DCOLORS[site.cat]||'#888';
+  var score=calcScore(site);
+  var stHtml=score>0?'<div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:9px;color:#F59E0B;text-shadow:0 0 2px #000;pointer-events:none">'+starHtml(Math.round(score))+'</div>':'';
+  var dim=site.id===selectedId?36:28;
+  var bdr=(site.id===selectedId?'3px':'2px')+' solid white';
+  var shd=(site.id===selectedId?'0 0 0 3px rgba(255,255,255,.4),':'')+'0 2px 6px rgba(0,0,0,.4)';
+  var emoji={factory:'F',sub:'S',supplier:'P',elim:'V',other:'O'}[site.cat]||'?';
+  var emo2={factory:'&#127981;',sub:'&#129525;',supplier:'&#128230;',elim:'&#9989;',other:'&#128204;'}[site.cat]||'&#128205;';
+  var inner;
+  if(site.profile){
+    inner='<img src="'+site.profile+'" width="'+dim+'" height="'+dim+'" style="border-radius:50%;object-fit:cover;border:'+bdr+';box-shadow:'+shd+';display:block" onerror="this.style.display=\'none\'">';
+  } else {
+    inner='<div style="width:'+dim+'px;height:'+dim+'px;border-radius:50%;background:'+col+';border:'+bdr+';display:flex;align-items:center;justify-content:center;font-size:'+(site.id===selectedId?13:10)+'px;box-shadow:'+shd+';color:#fff;font-weight:bold">'+emoji+'</div>';
+  }
+  return L.divIcon({className:'',html:'<div style="position:relative;display:inline-block;cursor:pointer">'+inner+stHtml+'</div>',iconSize:[dim,dim],iconAnchor:[dim/2,dim/2]});
+}
+
+function renderMarkers(){
+  var ids=Object.keys(markers);
+  for(var i=0;i<ids.length;i++)map.removeLayer(markers[ids[i]]);
+  markers={};
+  for(var i=0;i<sites.length;i++){
+    var s=sites[i];
+    if(!s.lat||!s.lng)continue;
+    (function(site){
+      var m=L.marker([site.lat,site.lng],{icon:makeIcon(site)}).addTo(map);
+      m.on('click',function(){selectSite(site.id);});
+      markers[site.id]=m;
+    })(s);
+  }
+  updateCounts();
+}
+
+function refreshMarker(id){
+  var s=getSite(id);if(!s||!markers[id])return;
+  markers[id].setIcon(makeIcon(s));
+}
+
+function selectSite(id){
+  var prev=selectedId;selectedId=id;
+  if(prev&&markers[prev])refreshMarker(prev);
+  if(markers[id])refreshMarker(id);
+  var s=getSite(id);if(!s)return;
+  map.setView([s.lat,s.lng],Math.max(map.getZoom(),13),{animate:true});
+  renderPanel(s);
+}
+
+function getSite(id){for(var i=0;i<sites.length;i++)if(sites[i].id===id)return sites[i];return null;}
+
+// ═══════════════════════════════════════════════════
+// PANEL
+// ═══════════════════════════════════════════════════
+function renderPanel(s){
+  var col=cfg.colors[s.cat]||DCOLORS[s.cat]||'#888';
+  var crits=cfg.criteria[s.cat]||DCRIT[s.cat]||[];
+  var score=calcScore(s);
+  var bars='';
+  for(var i=0;i<crits.length;i++){
+    var v=(s.scores&&s.scores[crits[i].key])||0;
+    if(!v)continue;
+    bars+='<div class="sb-r"><div class="sb-t"><span>'+crits[i].label+'</span><span style="font-weight:bold;color:'+col+'">'+v+'/10</span></div><div class="sb-bg"><div class="sb-fill" style="width:'+(v*10)+'%;background:'+col+'"></div></div></div>';
+  }
+  var photos=s.photos||[];
+  var photoHtml='';
+  if(photos.length){
+    photoHtml='<div class="gallery">';
+    for(var i=0;i<photos.length;i++){
+      var del=isAdmin?'<button class="gdel" onclick="event.stopPropagation();delPhoto(\''+s.id+'\','+i+')">x</button>':'';
+      photoHtml+='<div class="gitem"><img class="gimg" src="'+photos[i]+'" onerror="this.parentElement.style.display=\'none\'" onclick="openCarousel(\''+s.id+'\','+i+')" />' +del+'</div>';
+    }
+    photoHtml+='</div>';
+    if(photos.length>1){
+      photoHtml+='<p style="font-size:9px;color:#888;text-align:center;margin-bottom:4px">Click photo to browse &middot; '+photos.length+' photos</p>';
+    }
+  } else {
+    photoHtml='<p style="font-size:10px;color:#aaa;margin-bottom:6px">No photos.</p>';
+  }
+  var docs=s.docs||[];
+  var docHtml='';
+  if(docs.length){
+    for(var i=0;i<docs.length;i++){
+      var ico=docs[i].type==='pdf'?'&#128196;':docs[i].type==='excel'?'&#128202;':'&#128196;';
+      var del=isAdmin?'<button class="doc-del" onclick="delDoc(\''+s.id+'\','+i+')">&#128465;</button>':'';
+      docHtml+='<div class="doc-item"><span style="font-size:16px">'+ico+'</span><span class="doc-nm" onclick="openDoc(\''+s.id+'\','+i+')">'+docs[i].name+'</span>'+del+'</div>';
+    }
+  } else {
+    docHtml='<p style="font-size:10px;color:#aaa">No documents.</p>';
+  }
+  var tagHtml='';
+  var tags=s.tags||[];
+  for(var i=0;i<tags.length;i++){
+    var t=tags[i].toLowerCase();
+    var tc=t.indexOf('recommend')>=0||t.indexOf('approved')>=0?'tg':t.indexOf('risk')>=0||t.indexOf('pending')>=0||t.indexOf('warn')>=0?'ta':t.indexOf('eliminat')>=0||t.indexOf('concern')>=0||t.indexOf('hold')>=0?'tr':'tb';
+    tagHtml+='<span class="tag '+tc+'">'+tags[i]+'</span>';
+  }
+  var stcol={active:'#666',shortlisted:'#C47000',contracted:'#3B6D11',eliminated:'#8B2020',visited:'#185FA5'};
+  var profHtml='';
+  if(s.profile){
+    profHtml='<div style="margin:-10px 12px 8px;position:relative;z-index:2"><img src="'+s.profile+'" style="width:80px;height:80px;border-radius:10px;object-fit:cover;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer" onerror="this.style.display=\'none\'" onclick="viewPhoto(\''+s.profile.replace(/'/g,'\\\'')+'\')" /></div>';
+  }
+  var scoreChip=score>0?'<span style="background:'+col+';color:#fff;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:bold">'+starHtml(Math.round(score))+' '+score.toFixed(1)+'/10</span>':'';
+  var catLabel={factory:'Own Factory',sub:'Subcontractor',supplier:'Supplier',elim:'Eliminated',other:'Other'}[s.cat]||s.cat;
+  var infoRows='';
+  if(s.date)infoRows+='<div class="irow"><span class="ilbl">Visit Date</span><span class="ival">'+s.date+'</span></div>';
+  if(s.company)infoRows+='<div class="irow"><span class="ilbl">Company</span><span class="ival">'+s.company+'</span></div>';
+  if(s.person)infoRows+='<div class="irow"><span class="ilbl">Contact</span><span class="ival">'+s.person+'</span></div>';
+  if(s.phone)infoRows+='<div class="irow"><span class="ilbl">Phone</span><span class="ival"><a href="tel:'+s.phone+'" style="color:var(--teal)">'+s.phone+'</a></span></div>';
+  if(s.email)infoRows+='<div class="irow"><span class="ilbl">Email</span><span class="ival"><a href="mailto:'+s.email+'" style="color:var(--teal);font-size:10px">'+s.email+'</a></span></div>';
+  if(s.surface)infoRows+='<div class="irow"><span class="ilbl">Surface</span><span class="ival">'+Number(s.surface).toLocaleString()+' m&sup2;</span></div>';
+  if(s.rent)infoRows+='<div class="irow"><span class="ilbl">Monthly Rent</span><span class="ival '+(s.rent>20000?'ir':s.rent<15000?'ig':'iw')+'">'+Number(s.rent).toLocaleString()+' TND</span></div>';
+  if(s.rent)infoRows+='<div class="irow"><span class="ilbl">Annual Rent</span><span class="ival">'+Number(s.rent*12).toLocaleString()+' TND/yr</span></div>';
+  if(s.fte)infoRows+='<div class="irow"><span class="ilbl">Workforce</span><span class="ival">'+s.fte+' FTE</span></div>';
+  if(s.kh)infoRows+='<div class="irow"><span class="ilbl">Know-how</span><span class="ival">'+s.kh+'/100</span></div>';
+  if(s.mach&&s.mach!='None')infoRows+='<div class="irow"><span class="ilbl">Machines</span><span class="ival" style="font-size:10px">'+s.mach+'</span></div>';
+  if(s.works)infoRows+='<div class="irow"><span class="ilbl">Works Needed</span><span class="ival" style="font-size:10px">'+s.works+'</span></div>';
+  if(s.capex)infoRows+='<div class="irow"><span class="ilbl">CAPEX Works</span><span class="ival iw">'+Number(s.capex).toLocaleString()+' TND</span></div>';
+  var editBtn=isAdmin?'<button class="btn ba2" onclick="openEdit(\''+s.id+'\')" style="flex:1">&#9999;&#65039; Edit</button>':'';
+  document.getElementById('panelContent').innerHTML=
+    '<div class="shdr" style="background:'+col+'">'+
+      '<div class="styp">'+catLabel+'</div>'+
+      '<div class="snm">'+s.name+'</div>'+
+      '<div class="sloc">'+(s.city&&s.gov?s.city+' &middot; '+s.gov:s.city||s.gov||'')+'</div>'+
+      (s.lat?'<div style="font-size:9px;opacity:.5;font-family:monospace;margin-top:2px">'+s.lat.toFixed(5)+' '+s.lng.toFixed(5)+'</div>':'')+
+    '</div>'+
+    profHtml+
+    '<div class="pbd">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+        '<span style="font-size:11px;font-weight:bold;color:'+(stcol[s.status]||'#666')+'">'+(STLBL[s.status]||s.status)+'</span>'+
+        scoreChip+
+      '</div>'+
+      '<div class="isec"><div class="istit">Photos</div>'+photoHtml+'</div>'+
+      '<div class="isec"><div class="istit">Documents</div>'+docHtml+'</div>'+
+      '<div class="isec"><div class="istit">Key Info</div>'+infoRows+'</div>'+
+      (bars?'<div class="isec"><div class="istit">Scoring</div>'+bars+'</div>':'')+
+      '<div class="isec"><div class="istit">Notes</div><div class="nbox">'+( s.notes||'No notes yet.')+'</div></div>'+
+      (tagHtml?'<div class="tags" style="margin-bottom:8px">'+tagHtml+'</div>':'')+
+    '</div>'+
+    '<div class="pact">'+editBtn+'<button class="btn bt" onclick="flyTo(\''+s.id+'\')" style="flex:1">&#128506; Center</button></div>';
+}
+
+function flyTo(id){var s=getSite(id);if(s&&s.lat)map.setView([s.lat,s.lng],14,{animate:true});}
+var _carouselSiteId='', _carouselIdx=0;
+
+function openCarousel(siteId, idx){
+  _carouselSiteId=siteId;
+  _carouselIdx=idx;
+  showCarouselPhoto();
+  openM('photoOv');
+}
+
+function showCarouselPhoto(){
+  var s=getSite(_carouselSiteId);
+  if(!s||!s.photos||!s.photos.length)return;
+  var photos=s.photos;
+  if(_carouselIdx<0)_carouselIdx=photos.length-1;
+  if(_carouselIdx>=photos.length)_carouselIdx=0;
+  document.getElementById('phImg').src=photos[_carouselIdx];
+  document.getElementById('phTitle').textContent=s.name+' — Photo '+(_carouselIdx+1)+' / '+photos.length;
+  document.getElementById('phPrev').style.display=photos.length>1?'':'none';
+  document.getElementById('phNext').style.display=photos.length>1?'':'none';
+  document.getElementById('phCounter').textContent=photos.length>1?(_carouselIdx+1)+' / '+photos.length:'';
+}
+
+function carouselPrev(){_carouselIdx--;showCarouselPhoto();}
+function carouselNext(){_carouselIdx++;showCarouselPhoto();}
+function carouselGoto(idx){_carouselIdx=idx;showCarouselPhoto();}
+function viewPhoto(url){
+  // Legacy fallback - open in carousel at index 0
+  document.getElementById('phImg').src=url;
+  document.getElementById('phTitle').textContent='Photo';
+  document.getElementById('phPrev').style.display='none';
+  document.getElementById('phNext').style.display='none';
+  document.getElementById('phCounter').textContent='';
+  openM('photoOv');
+}
+function delPhoto(siteId,idx){if(!isAdmin)return;if(!confirm('Remove this photo?'))return;var s=getSite(siteId);if(!s)return;s.photos.splice(idx,1);persist();renderPanel(s);toast('Photo removed');}
+function delDoc(siteId,idx){if(!isAdmin)return;if(!confirm('Remove this document?'))return;var s=getSite(siteId);if(!s)return;s.docs.splice(idx,1);persist();renderPanel(s);toast('Document removed');}
+function openDoc(siteId,idx){var s=getSite(siteId);if(!s||!s.docs[idx])return;var a=document.createElement('a');a.href=s.docs[idx].dataUrl;a.download=s.docs[idx].name;a.click();}
+
+// ═══════════════════════════════════════════════════
+// SEARCH & COUNTS
+// ═══════════════════════════════════════════════════
+function doSearch(q){
+  q=q.toLowerCase();
+  var ids=Object.keys(markers);
+  for(var i=0;i<ids.length;i++){
+    var s=getSite(ids[i]);if(!s)continue;
+    var match=!q||(s.name||'').toLowerCase().indexOf(q)>=0||(s.city||'').toLowerCase().indexOf(q)>=0||(s.notes||'').toLowerCase().indexOf(q)>=0||(s.company||'').toLowerCase().indexOf(q)>=0;
+    if(!match&&s.tags)for(var j=0;j<s.tags.length;j++)if(s.tags[j].toLowerCase().indexOf(q)>=0){match=true;break;}
+    var el=markers[ids[i]].getElement();if(el)el.style.opacity=match?'1':'0.1';
+  }
+}
+
+function toggleCat(cat){
+  var idx=hiddenCats.indexOf(cat);
+  if(idx>=0)hiddenCats.splice(idx,1);else hiddenCats.push(cat);
+  document.getElementById('leg-'+cat).classList.toggle('off',hiddenCats.indexOf(cat)>=0);
+  var ids=Object.keys(markers);
+  for(var i=0;i<ids.length;i++){
+    var s=getSite(ids[i]);if(!s)continue;
+    var el=markers[ids[i]].getElement();if(el)el.style.opacity=hiddenCats.indexOf(s.cat)>=0?'0.12':'1';
+  }
+}
+
+function updateCounts(){
+  var cats=['factory','sub','supplier','elim','other'];
+  var total=0;var f=0;var s=0;var sup=0;
+  for(var i=0;i<sites.length;i++){
+    total++;
+    if(sites[i].cat==='factory')f++;
+    if(sites[i].cat==='sub')s++;
+    if(sites[i].cat==='supplier')sup++;
+  }
+  document.getElementById('stTotal').textContent=total;
+  document.getElementById('stF').textContent=f;
+  document.getElementById('stS').textContent=s;
+  document.getElementById('stSup').textContent=sup;
+  for(var i=0;i<cats.length;i++){
+    var c=cats[i];var cnt=0;
+    for(var j=0;j<sites.length;j++)if(sites[j].cat===c)cnt++;
+    var el=document.getElementById('cnt-'+c);if(el)el.textContent=cnt;
+    var dot=document.getElementById('dot-'+c);if(dot)dot.style.background=cfg.colors[c]||DCOLORS[c];
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// VIEWS
+// ═══════════════════════════════════════════════════
+function showView(v){
+  document.getElementById('mapWrap').style.display=v==='map'?'flex':'none';
+  document.getElementById('dbWrap').style.display=v==='db'?'flex':'none';
+  document.getElementById('setWrap').style.display=v==='set'?'flex':'none';
+  var tabs=['map','db','set'];
+  for(var i=0;i<tabs.length;i++)document.getElementById('tab-'+tabs[i]).classList.toggle('active',tabs[i]===v);
+  if(v==='db')renderDB();
+  if(v==='set')initSettings();
+  if(v==='map')setTimeout(function(){if(map)map.invalidateSize();},100);
+}
+
+// ═══════════════════════════════════════════════════
+// DATABASE VIEW
+// ═══════════════════════════════════════════════════
+function renderDB(){
+  var catF=document.getElementById('dbCat').value;
+  var stF=document.getElementById('dbSt').value;
+  var filtered=[];
+  for(var i=0;i<sites.length;i++){
+    var s=sites[i];
+    if(catF&&s.cat!==catF)continue;
+    if(stF&&s.status!==stF)continue;
+    filtered.push(s);
+  }
+  document.getElementById('dbCnt').textContent=filtered.length+' sites';
+  var rows='';
+  for(var i=0;i<filtered.length;i++){
+    var s=filtered[i];
+    var col=cfg.colors[s.cat]||DCOLORS[s.cat]||'#888';
+    var score=calcScore(s);
+    var delBtn=isAdmin?'<button onclick="event.stopPropagation();dbDeleteSite(\''+s.id+'\')" style="background:#8B2020;color:#fff;border:none;border-radius:3px;padding:3px 8px;cursor:pointer;font-size:10px">&#128465; Delete</button>':'—';
+    var scChip=score>0?'<span class="sc-chip" style="background:'+(score>=7?'#D5EDDC':score>=5?'#FFF0DC':'#FADBD8')+';color:'+(score>=7?'#1A6B35':score>=5?'#C47000':'#8B2020')+'">'+starHtml(Math.round(score))+' '+score.toFixed(1)+'</span>':'—';
+    rows+='<tr onclick="goSite(\''+s.id+'\')">'+'<td style="color:#888;font-size:10px">'+(i+1)+'</td>'+'<td style="font-weight:bold;font-size:11px">'+s.name+'</td>'+'<td><span class="cpill" style="background:'+col+'">'+CATLBL[s.cat]+'</span></td>'+'<td style="font-size:10px;color:'+(s.status==='shortlisted'?'#C47000':s.status==='contracted'?'#3B6D11':'#666')+'">'+(STLBL[s.status]||s.status)+'</td>'+'<td style="font-size:10px">'+([s.city,s.gov].filter(Boolean).join(', ')||'—')+'</td>'+'<td style="font-size:10px">'+(s.surface?Number(s.surface).toLocaleString():'—')+'</td>'+'<td style="font-size:10px;font-weight:bold">'+(s.rent?Number(s.rent).toLocaleString():'—')+'</td>'+'<td>'+scChip+'</td>'+'<td style="font-size:10px">'+([s.person,s.phone].filter(Boolean).join(' &middot; ')||s.company||'—')+'</td>'+'<td style="font-size:10px">'+(s.date||'—')+'</td>'+'<td style="font-size:9px">'+((s.tags||[]).slice(0,2).join(', '))+'</td>'+'<td>'+delBtn+'</td>'+'</tr>';
+  }
+  document.getElementById('dbBody').innerHTML=rows;
+}
+
+function goSite(id){showView('map');setTimeout(function(){selectSite(id);},150);}
+
+function dbDeleteSite(id){
+  if(!isAdmin){toast('Admin access required');return;}
+  var s=getSite(id);
+  if(!s||!confirm('Delete "'+s.name+'"?\nThis cannot be undone.'))return;
+  sites=sites.filter(function(x){return x.id!==id;});
+  if(markers[id]){map.removeLayer(markers[id]);delete markers[id];}
+  if(selectedId===id){selectedId=null;document.getElementById('panelContent').innerHTML='<div class="ph"><div class="ph-ico">&#128465;</div><p>Site deleted.</p></div>';}
+  persist();renderDB();updateCounts();toast('Site deleted');
+}
+
+// ═══════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════
+function initSettings(){
+  var cats=['factory','sub','supplier','elim','other'];
+  for(var i=0;i<cats.length;i++){var el=document.getElementById('col-'+cats[i]);if(el)el.value=cfg.colors[cats[i]]||DCOLORS[cats[i]];}
+  renderCrit();
+}
+
+function applyColor(cat,val){cfg.colors[cat]=val;updateCounts();renderMarkers();persist();}
+function resetColors(){cfg.colors=Object.assign({},DCOLORS);initSettings();updateCounts();renderMarkers();persist();toast('Colors reset');}
+
+function renderCrit(){
+  var cat=document.getElementById('critCat').value;
+  var crits=cfg.criteria[cat]||DCRIT[cat]||[];
+  var h='';
+  for(var i=0;i<crits.length;i++){
+    h+='<div class="crit-row"><input class="crit-inp" value="'+crits[i].label+'" id="cl'+i+'"><input class="crit-wt" type="number" value="'+crits[i].weight+'" id="cw'+i+'" min="1" max="20"><button class="crit-del" onclick="rmCrit('+i+')">&#215;</button></div>';
+  }
+  document.getElementById('critList').innerHTML=h;
+}
+
+function addCrit(){var cat=document.getElementById('critCat').value;if(!cfg.criteria[cat])cfg.criteria[cat]=JSON.parse(JSON.stringify(DCRIT[cat]||[]));cfg.criteria[cat].push({key:'c'+Date.now(),label:'New Criterion',weight:5});renderCrit();}
+function rmCrit(i){var cat=document.getElementById('critCat').value;cfg.criteria[cat].splice(i,1);renderCrit();}
+function saveCrit(){
+  var cat=document.getElementById('critCat').value;
+  var crits=cfg.criteria[cat]||[];
+  for(var i=0;i<crits.length;i++){
+    var l=document.getElementById('cl'+i);var w=document.getElementById('cw'+i);
+    if(l)crits[i].label=l.value.trim()||crits[i].label;
+    if(w)crits[i].weight=parseInt(w.value)||crits[i].weight;
+    if(!crits[i].key)crits[i].key='c'+i;
+  }
+  persist();renderMarkers();toast('Criteria saved');
+}
+
+function changePw(){
+  if(!isAdmin){toast('Admin required');return;}
+  var cur=document.getElementById('curPw').value;
+  var nw=document.getElementById('newPw').value;
+  if(cur!==loadPw()){toast('Current password incorrect');return;}
+  if(nw.length<6){toast('New password: min 6 characters');return;}
+  localStorage.setItem(PK,nw);document.getElementById('curPw').value='';document.getElementById('newPw').value='';toast('Password updated');
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN LOGIN
+// ═══════════════════════════════════════════════════
+function openLogin(){if(isAdmin){doLogout();return;}document.getElementById('pwInp').value='';document.getElementById('loginErr').style.display='none';openM('loginOv');setTimeout(function(){document.getElementById('pwInp').focus();},80);}
+function tryLogin(){
+  if(document.getElementById('pwInp').value===loadPw()){
+    isAdmin=true;closeM('loginOv');
+    document.getElementById('modeBadge').textContent='ADMIN';
+    document.getElementById('modeBadge').className='badge ba';
+    document.getElementById('loginBtn').textContent='Logout';
+    document.getElementById('addBtn').style.display='';
+    toast('Admin mode enabled');
+  } else {
+    document.getElementById('loginErr').style.display='block';
+    document.getElementById('pwInp').value='';
+    document.getElementById('pwInp').focus();
+  }
+}
+function doLogout(){isAdmin=false;document.getElementById('modeBadge').textContent='VIEWER';document.getElementById('modeBadge').className='badge bv';document.getElementById('loginBtn').textContent='Admin';document.getElementById('addBtn').style.display='none';if(selectedId){var s=getSite(selectedId);if(s)renderPanel(s);}toast('Logged out');}
+
+// ═══════════════════════════════════════════════════
+// SITE FORM
+// ═══════════════════════════════════════════════════
+function buildScores(){
+  var cat=document.getElementById('f_cat').value;
+  var crits=cfg.criteria[cat]||DCRIT[cat]||[];
+  var s=editingId?getSite(editingId):null;
+  var existing=s&&s.scores?s.scores:{};
+  var col=cfg.colors[cat]||DCOLORS[cat]||'#2D7A6A';
+  var h='';
+  for(var i=0;i<crits.length;i++){
+    var v=existing[crits[i].key]||5;
+    h+='<div class="sc-irow"><span class="sc-lbl">'+crits[i].label+'</span><input class="sc-num" type="number" id="sc_'+crits[i].key+'" min="1" max="10" value="'+v+'" oninput="updBar(\''+crits[i].key+'\',this.value,\''+col+'\')"><div class="sc-bg"><div class="sc-fill" id="scb_'+crits[i].key+'" style="width:'+(v*10)+'%;background:'+col+'"></div></div></div>';
+  }
+  document.getElementById('scoreFields').innerHTML=h;
+}
+function updBar(key,val,col){var el=document.getElementById('scb_'+key);if(el)el.style.width=(Math.min(10,Math.max(1,parseInt(val)||1))*10)+'%';}
+
+function openAdd(){
+  if(!isAdmin){toast('Admin required');return;}
+  editingId=null;pendingPhotos=[];pendingDocs=[];pendingProf='';
+  document.getElementById('fTitle').textContent='Add New Site';
+  document.getElementById('fDelBtn').style.display='none';
+  var ids=['f_name','f_city','f_gov','f_company','f_person','f_phone','f_email','f_lat','f_lng','f_surface','f_rent','f_fte','f_kh','f_mach','f_works','f_capex','f_notes','f_tags','f_photoUrls','f_profUrl'];
+  for(var i=0;i<ids.length;i++){var el=document.getElementById(ids[i]);if(el)el.value='';}
+  document.getElementById('f_cat').value='factory';
+  document.getElementById('f_status').value='active';
+  document.getElementById('f_date').value='';
+  document.getElementById('photoPreview').innerHTML='';
+  document.getElementById('docPreview').innerHTML='';
+  document.getElementById('profThumb').innerHTML='&#127981;';
+  buildScores();openM('siteOv');
+}
+
+function openEdit(id){
+  if(!isAdmin){toast('Admin required');return;}
+  var s=getSite(id);if(!s)return;
+  editingId=id;pendingPhotos=[];pendingDocs=JSON.parse(JSON.stringify(s.docs||[]));pendingProf=s.profile||'';
+  document.getElementById('fTitle').textContent='Edit Site';
+  document.getElementById('fDelBtn').style.display='';
+  function sv(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';}
+  sv('f_name',s.name);sv('f_city',s.city);sv('f_gov',s.gov);sv('f_company',s.company);sv('f_person',s.person);sv('f_phone',s.phone);sv('f_email',s.email);sv('f_lat',s.lat);sv('f_lng',s.lng);sv('f_date',s.date);sv('f_surface',s.surface||'');sv('f_rent',s.rent||'');sv('f_fte',s.fte||'');sv('f_kh',s.kh||'');sv('f_mach',s.mach);sv('f_works',s.works);sv('f_capex',s.capex||'');sv('f_notes',s.notes);sv('f_tags',(s.tags||[]).join(', '));
+  var urlPhotos=(s.photos||[]).filter(function(p){return p.indexOf('data:')!==0;});
+  sv('f_photoUrls',urlPhotos.join('\n'));
+  sv('f_profUrl',s.profile&&s.profile.indexOf('data:')!==0?s.profile:'');
+  document.getElementById('f_cat').value=s.cat||'factory';
+  document.getElementById('f_status').value=s.status||'active';
+  document.getElementById('photoPreview').innerHTML='';
+  renderDocPreview();
+  if(s.profile){document.getElementById('profThumb').innerHTML='<img src="'+s.profile+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px">';}
+  else{document.getElementById('profThumb').innerHTML='&#127981;';}
+  buildScores();openM('siteOv');
+}
+
+function saveSite(){
+  var name=document.getElementById('f_name').value.trim();
+  var lat=parseFloat(document.getElementById('f_lat').value);
+  var lng=parseFloat(document.getElementById('f_lng').value);
+  if(!name){toast('Site name required');return;}
+  if(isNaN(lat)||isNaN(lng)){toast('Coordinates required');return;}
+  var cat=document.getElementById('f_cat').value;
+  var crits=cfg.criteria[cat]||DCRIT[cat]||[];
+  var scores={};
+  for(var i=0;i<crits.length;i++){var el=document.getElementById('sc_'+crits[i].key);if(el)scores[crits[i].key]=parseInt(el.value)||5;}
+  var urlPhotos=document.getElementById('f_photoUrls').value.split('\n').map(function(x){return x.trim();}).filter(Boolean);
+  var b64Photos=pendingPhotos.filter(function(p){return p.indexOf('data:')===0;});
+  var allPhotos=urlPhotos.concat(b64Photos);
+  // deduplicate
+  var seen={};var uniq=[];for(var i=0;i<allPhotos.length;i++)if(!seen[allPhotos[i]]){seen[allPhotos[i]]=1;uniq.push(allPhotos[i]);}
+  var profUrl=document.getElementById('f_profUrl').value.trim();
+  var prof=pendingProf||profUrl||'';
+  var tags=document.getElementById('f_tags').value.split(',').map(function(x){return x.trim();}).filter(Boolean);
+  var sd={id:editingId||'s'+Date.now(),name:name,lat:lat,lng:lng,cat:cat,status:document.getElementById('f_status').value,city:document.getElementById('f_city').value.trim(),gov:document.getElementById('f_gov').value.trim(),company:document.getElementById('f_company').value.trim(),person:document.getElementById('f_person').value.trim(),phone:document.getElementById('f_phone').value.trim(),email:document.getElementById('f_email').value.trim(),date:document.getElementById('f_date').value,surface:parseInt(document.getElementById('f_surface').value)||0,rent:parseInt(document.getElementById('f_rent').value)||0,fte:parseInt(document.getElementById('f_fte').value)||0,kh:parseInt(document.getElementById('f_kh').value)||0,mach:document.getElementById('f_mach').value.trim(),works:document.getElementById('f_works').value.trim(),capex:parseInt(document.getElementById('f_capex').value)||0,scores:scores,notes:document.getElementById('f_notes').value.trim(),profile:prof,tags:tags,photos:uniq,docs:pendingDocs};
+  if(editingId){var idx=-1;for(var i=0;i<sites.length;i++)if(sites[i].id===editingId)idx=i;if(idx>=0)sites[idx]=sd;}else{sites.push(sd);}
+  persist();closeM('siteOv');renderMarkers();selectSite(sd.id);toast('Saved: '+name);
+}
+
+function deleteSite(){
+  if(!editingId||!isAdmin)return;
+  var s=getSite(editingId);
+  if(!s||!confirm('Delete "'+s.name+'"?'))return;
+  sites=sites.filter(function(x){return x.id!==editingId;});
+  if(markers[editingId]){map.removeLayer(markers[editingId]);delete markers[editingId];}
+  persist();closeM('siteOv');selectedId=null;document.getElementById('panelContent').innerHTML='<div class="ph"><div class="ph-ico">&#128465;</div><p>Site deleted.</p></div>';updateCounts();toast('Site deleted');
+}
+
+// ═══════════════════════════════════════════════════
+// PROFILE PHOTO
+// ═══════════════════════════════════════════════════
+function prevProf(url){
+  var th=document.getElementById('profThumb');
+  if(url){th.innerHTML='<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;border-radius:6px" onerror="this.parentElement.innerHTML=\'&#127981;\'">';}
+  else{th.innerHTML='&#127981;';}
+}
+function upProf(e){
+  var f=e.target.files[0];if(!f)return;
+  if(f.size>3*1024*1024){toast('Max 3MB for profile photo');return;}
+  var r=new FileReader();
+  r.onload=function(ev){pendingProf=ev.target.result;document.getElementById('f_profUrl').value='';prevProf(ev.target.result);toast('Profile photo ready');};
+  r.readAsDataURL(f);
+}
+
+// ═══════════════════════════════════════════════════
+// PHOTOS & DOCS UPLOAD
+// ═══════════════════════════════════════════════════
+function upPhotos(e){
+  var files=Array.prototype.slice.call(e.target.files);
+  files.forEach(function(f){
+    if(f.size>5*1024*1024){toast('Max 5MB per photo: '+f.name);return;}
+    var r=new FileReader();
+    r.onload=function(ev){
+      pendingPhotos.push(ev.target.result);
+      var pp=document.getElementById('photoPreview');
+      var d=document.createElement('div');d.style.cssText='position:relative;display:inline-block;margin:2px';
+      var img=document.createElement('img');img.src=ev.target.result;img.style.cssText='width:60px;height:60px;object-fit:cover;border-radius:3px;border:1px solid #ddd;display:block';
+      var btn=document.createElement('button');btn.textContent='x';btn.style.cssText='position:absolute;top:-5px;right:-5px;background:#8B2020;color:#fff;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px;line-height:16px;text-align:center';
+      var src=ev.target.result;
+      btn.onclick=function(){pendingPhotos=pendingPhotos.filter(function(x){return x!==src;});d.remove();};
+      d.appendChild(img);d.appendChild(btn);pp.appendChild(d);
+      toast('Photo ready: '+f.name);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function upDocs(e){
+  var files=Array.prototype.slice.call(e.target.files);
+  files.forEach(function(f){
+    if(f.size>10*1024*1024){toast('Max 10MB per document: '+f.name);return;}
+    var r=new FileReader();
+    r.onload=function(ev){
+      var type=f.name.match(/\.pdf$/i)?'pdf':f.name.match(/\.xlsx?$/i)?'excel':'word';
+      pendingDocs.push({name:f.name,dataUrl:ev.target.result,type:type});
+      renderDocPreview();toast('Document ready: '+f.name);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function renderDocPreview(){
+  var h='';
+  for(var i=0;i<pendingDocs.length;i++){
+    var ico=pendingDocs[i].type==='pdf'?'&#128196;':pendingDocs[i].type==='excel'?'&#128202;':'&#128196;';
+    (function(idx){h+='<div class="pd-item"><span>'+ico+' '+pendingDocs[idx].name+'</span><button onclick="pendingDocs.splice('+idx+',1);renderDocPreview();toast(\'Removed\')">&#215;</button></div>';})(i);
+  }
+  document.getElementById('docPreview').innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════
+// AUTOCOMPLETE
+// ═══════════════════════════════════════════════════
+function acSrc(q,inpId,listId){
+  var list=document.getElementById(listId);
+  if(!q||q.length<1){list.classList.add('hidden');return;}
+  var matches=CITIES.filter(function(c){return c.toLowerCase().indexOf(q.toLowerCase())===0;}).slice(0,8);
+  if(!matches.length){list.classList.add('hidden');return;}
+  var h='';for(var i=0;i<matches.length;i++)h+='<div class="aci" onmousedown="acSel(\''+matches[i]+'\',\''+inpId+'\',\''+listId+'\')">'+matches[i]+'</div>';
+  list.innerHTML=h;list.classList.remove('hidden');
+}
+function acSel(val,inpId,listId){document.getElementById(inpId).value=val;document.getElementById(listId).classList.add('hidden');}
+function closeAC(listId){var el=document.getElementById(listId);if(el)el.classList.add('hidden');}
+
+// ═══════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════════
+function doExportJSON(){
+  var data={sites:sites,cfg:cfg,exported:new Date().toISOString()};
+  var b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='persentili_dashboard_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);
+  toast('JSON exported');
+}
+function triggerImport(){document.getElementById('importInp').click();}
+function doImport(e){
+  var f=e.target.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    try{var d=JSON.parse(ev.target.result);if(!d.sites||!Array.isArray(d.sites))throw new Error('Invalid');if(!confirm('Import '+d.sites.length+' sites? Replaces all current data.'))return;sites=d.sites;if(d.cfg){cfg.colors=Object.assign({},DCOLORS,d.cfg.colors||{});if(d.cfg.criteria)cfg.criteria=Object.assign({},DCRIT,d.cfg.criteria);}persist();renderMarkers();toast('Imported '+d.sites.length+' sites');}catch(err){toast('Import failed — invalid file');}
+  };
+  r.readAsText(f);e.target.value='';
+}
+function doExportCSV(){
+  var hdr='Name,Category,Status,City,Gov,Company,Contact,Phone,Email,Surface m2,Rent TND/mo,Rent TND/yr,FTE,Know-how,CAPEX TND,Score /10,Stars,Date,Machines,Works,Tags,Lat,Lng,Notes\n';
+  var rows='';
+  for(var i=0;i<sites.length;i++){
+    var s=sites[i];var sc=calcScore(s);
+    var vals=[s.name,CATLBL[s.cat]||s.cat,STLBL[s.status]||s.status,s.city,s.gov,s.company,s.person,s.phone,s.email,s.surface,s.rent,s.rent?s.rent*12:'',s.fte,s.kh,s.capex,sc>0?sc.toFixed(2):'',sc>0?String(Math.round(sc/2))+'stars':'',s.date,s.mach,s.works,(s.tags||[]).join('; '),s.lat,s.lng,(s.notes||'').replace(/\n/g,' ')];
+    rows+=vals.map(function(v){var str=String(v==null?'':v);return str.indexOf(',')>=0||str.indexOf('"')>=0?'"'+str.replace(/"/g,'""')+'"':str;}).join(',')+'\n';
+  }
+  var b=new Blob(['\ufeff'+hdr+rows],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='persentili_sites_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(a.href);
+  toast('CSV exported — open in Excel');
+}
+function doReset(){
+  if(!isAdmin){toast('Admin required');return;}
+  if(!confirm('Reset ALL data to factory defaults?'))return;
+  sites=getDefaults();cfg={colors:Object.assign({},DCOLORS),criteria:JSON.parse(JSON.stringify(DCRIT))};persist();renderMarkers();initSettings();selectedId=null;document.getElementById('panelContent').innerHTML='<div class="ph"><div class="ph-ico">&#128205;</div><p>Reset complete. Click a marker to view.</p></div>';toast('Reset complete');
+}
+
+// ═══════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════
+function openM(id){document.getElementById(id).classList.remove('hidden');}
+function closeM(id){document.getElementById(id).classList.add('hidden');}
+
+var overlays=document.querySelectorAll('.overlay');
+for(var i=0;i<overlays.length;i++){
+  overlays[i].addEventListener('click',(function(el){return function(e){if(e.target===el)closeM(el.id);};})(overlays[i]));
+}
+
+var _tt=null;
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');if(_tt)clearTimeout(_tt);_tt=setTimeout(function(){t.classList.remove('show');},3000);}
+
+
+// ════════════════════════════════════════════════════════════
+// TRANSPORT LINES
+// ════════════════════════════════════════════════════════════
+var transportLines = [];
+var transportVisible = true;
+
+function drawTransportLines(){
+  // Clear existing
+  for(var i=0;i<transportLines.length;i++) map.removeLayer(transportLines[i]);
+  transportLines = [];
+
+  // ── LINE 1: BLUE — Sidi Abdelhamid → Sahline / Messadine axis ──
+  // Main coastal route: Sidi Abdelhamid → Sousse centre → Akouda → Sahline → Messadine
+  var line1 = L.polyline([
+    [35.8312, 10.6348],  // Sidi Abdelhamid (main bus terminus Sousse)
+    [35.8282, 10.6381],  // Sousse centre
+    [35.8100, 10.6420],  // Sousse Sud / GP1
+    [35.7870, 10.6490],  // Akouda
+    [35.7728, 10.6934],  // Sahline D1+D2 ★ PERSENTILI SITE
+    [35.7600, 10.6600],  // Route Sahline-Messadine
+    [35.7260, 10.6450],  // Messadine ★ PERSENTILI SITE
+  ], {
+    color: '#2563EB',
+    weight: 5,
+    opacity: 0.85,
+    dashArray: null,
+    className: 'transport-line'
+  }).addTo(map);
+
+  var dec1 = L.polylineDecorator(line1, {
+    patterns: [{
+      offset: '10%', repeat: '20%',
+      symbol: L.Symbol.arrowHead({pixelSize:10, polygon:false, pathOptions:{color:'#2563EB',weight:2,opacity:.9}})
+    }]
+  });
+
+  line1.bindTooltip(
+    '<b style="color:#2563EB">&#128652; LINE 1 — SOUSSE NORTH AXIS</b><br>' +
+    'Sidi Abdelhamid &rarr; Sousse &rarr; Akouda &rarr; <b>Sahline D1+D2</b> &rarr; <b>Messadine</b><br>' +
+    '<span style="font-size:10px">Main coastal route GP1 &middot; High frequency bus + louage &middot; ~35 min from terminus</span>',
+    {sticky:true, className:'transport-tooltip'}
+  );
+  transportLines.push(line1);
+
+  // ── LINE 2: GREEN — Sidi Abdelhamid → Msaken → Moknine → Jemmel ──
+  // Southern inland route via GP1 then bifurcation
+  var line2 = L.polyline([
+    [35.8312, 10.6348],  // Sidi Abdelhamid terminus
+    [35.7950, 10.6600],  // Sousse Sud / junction
+    [35.7400, 10.6600],  // En-Nour / mid corridor
+    [35.7100, 10.6800],  // Msaken
+    [35.6650, 10.7100],  // Moknine junction
+    [35.6206, 10.7111],  // Jemmel (CM TEX supplier also here)
+  ], {
+    color: '#16A34A',
+    weight: 5,
+    opacity: 0.85,
+    dashArray: null
+  }).addTo(map);
+
+  line2.bindTooltip(
+    '<b style="color:#16A34A">&#128652; LINE 2 — MSAKEN / JEMMEL AXIS</b><br>' +
+    'Sidi Abdelhamid &rarr; Msaken &rarr; Moknine &rarr; <b>Jemmel</b><br>' +
+    '<span style="font-size:10px">Southern inland corridor &middot; Bus SNTRI + louage &middot; Dense workforce pool</span>',
+    {sticky:true, className:'transport-tooltip'}
+  );
+  transportLines.push(line2);
+
+  // ── LINE 3: ORANGE — Sidi Abdelhamid → Bembla → Monastir (coastal) ──
+  // Northern coastal road: Sousse → Khniss → Frina → Bembla → Monastir
+  var line3 = L.polyline([
+    [35.8312, 10.6348],  // Sidi Abdelhamid terminus
+    [35.8050, 10.7000],  // Route nationale heading east
+    [35.7950, 10.8100],  // Frina ★ PERSENTILI SITE
+    [35.7750, 10.8300],  // Bembla
+    [35.7500, 10.8100],  // Monastir North
+    [35.7770, 10.8079],  // Monastir (port area)
+  ], {
+    color: '#EA580C',
+    weight: 5,
+    opacity: 0.85,
+    dashArray: null
+  }).addTo(map);
+
+  line3.bindTooltip(
+    '<b style="color:#EA580C">&#128652; LINE 3 — MONASTIR COASTAL AXIS</b><br>' +
+    'Sidi Abdelhamid &rarr; <b>Frina</b> &rarr; <b>Bembla</b> &rarr; Monastir<br>' +
+    '<span style="font-size:10px">Northern coastal route &middot; Bus + louage monastir &middot; Khniss & Frina corridor</span>',
+    {sticky:true, className:'transport-tooltip'}
+  );
+  transportLines.push(line3);
+
+  // ── TERMINUS MARKER — Sidi Abdelhamid ──
+  var terminus = L.circleMarker([35.8312, 10.6348], {
+    radius: 12,
+    fillColor: '#1A3C4A',
+    color: 'white',
+    weight: 3,
+    opacity: 1,
+    fillOpacity: 1
+  }).addTo(map);
+  terminus.bindTooltip(
+    '<b>&#128652; SIDI ABDELHAMID</b><br>' +
+    'Main transport terminus &middot; Sousse<br>' +
+    '<span style="font-size:10px">All 3 lines originate here &middot; Louage + Bus hub</span>',
+    {sticky:true, className:'transport-tooltip'}
+  );
+  transportLines.push(terminus);
+
+  // ── SITE LABELS on lines ──
+  addLineLabel([35.7728, 10.6934], 'Sahline D1+D2 ★', '#2563EB');
+  addLineLabel([35.7260, 10.6450], 'Messadine ★', '#2563EB');
+  addLineLabel([35.7100, 10.6800], 'Msaken', '#16A34A');
+  addLineLabel([35.6206, 10.7111], 'Jemmel', '#16A34A');
+  addLineLabel([35.7950, 10.8100], 'Frina ★', '#EA580C');
+  addLineLabel([35.7750, 10.8300], 'Bembla', '#EA580C');
+}
+
+function addLineLabel(latlng, text, color){
+  var label = L.marker(latlng, {
+    icon: L.divIcon({
+      className: '',
+      html: '<div style="background:'+color+';color:#fff;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:bold;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.3)">'+text+'</div>',
+      iconAnchor: [0, 10]
+    }),
+    interactive: false
+  }).addTo(map);
+  transportLines.push(label);
+}
+
+function toggleTransport(){
+  transportVisible = !transportVisible;
+  for(var i=0;i<transportLines.length;i++){
+    var el = transportLines[i].getElement ? transportLines[i].getElement() : null;
+    if(transportLines[i]._path) transportLines[i]._path.style.display = transportVisible ? '' : 'none';
+    if(el) el.style.display = transportVisible ? '' : 'none';
+  }
+  var btn = document.getElementById('transpBtn');
+  if(btn) btn.textContent = transportVisible ? '&#128652; Transport Lines ON' : '&#128652; Transport Lines OFF';
+  if(btn) btn.style.background = transportVisible ? 'rgba(255,255,255,.3)' : 'rgba(255,255,255,.08)';
+}
+
+
+// ═══════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════
+// CSV / EXCEL IMPORT
+// ════════════════════════════════════════════════════════════
+function downloadTemplate(){
+  var hdr = 'name,category,status,lat,lng,city,gov,company,person,phone,email,date,surface,rent,fte,kh,mach,works,capex,notes,tags\n';
+  var ex  = 'Example Factory,factory,active,35.773,10.693,Monastir,Monastir,My Company,John Doe,+216 12 345 678,contact@co.tn,2026-08-13,2300,14000,150,70,Boiler transformer,Epoxy floor needed,150000,Good transport access,recommended; new build\n';
+  var ex2 = 'Example Sub,sub,shortlisted,35.750,10.700,Sousse,Sousse,Sub SARL,Ali Ben Ali,+216 99 000 111,ali@sub.tn,2026-08-10,1800,10000,80,75,Industrial machines,Minor renovation,50000,Quality savoir-faire,ICS compliant; experienced\n';
+  var ex3 = 'CM TEX Supplier,supplier,contracted,35.621,10.711,Jemmel,Monastir,STE CM TEX,,,,,0,0,0,0,Stone automates Fingtex,,0,Machine supplier - quotes received,Stone automates; boiler\n';
+  var b = new Blob([hdr+ex+ex2+ex3],{type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');a.href=URL.createObjectURL(b);a.download='persentili_sites_template.csv';a.click();URL.revokeObjectURL(a.href);
+  toast('Template downloaded — fill it and import');
+}
+
+function doCSVImport(e){
+  var f=e.target.files[0];if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var text=ev.target.result;
+      var lines=text.split('\n').filter(function(l){return l.trim();});
+      if(lines.length<2){toast('CSV is empty');return;}
+      // Parse header
+      var hdr=parseCSVLine(lines[0]);
+      var imported=[];
+      var skipped=0;
+      for(var i=1;i<lines.length;i++){
+        var vals=parseCSVLine(lines[i]);
+        if(!vals||vals.length<3){skipped++;continue;}
+        var obj={};
+        for(var j=0;j<hdr.length;j++) obj[hdr[j].trim().toLowerCase()]=vals[j]?vals[j].trim():'';
+        // Validate required fields
+        if(!obj.name||!obj.lat||!obj.lng||isNaN(parseFloat(obj.lat))||isNaN(parseFloat(obj.lng))){skipped++;continue;}
+        // Map CSV fields to site object
+        var catMap={'factory':'factory','own factory':'factory','own_factory':'factory','sub':'sub','subcontractor':'sub','supplier':'supplier','elim':'elim','eliminated':'elim','other':'other'};
+        var stMap={'active':'active','under review':'active','shortlisted':'shortlisted','contracted':'contracted','eliminated':'eliminated','visited':'visited'};
+        var site={
+          id:'csv_'+Date.now()+'_'+i,
+          name:obj.name,
+          lat:parseFloat(obj.lat),
+          lng:parseFloat(obj.lng),
+          cat:catMap[(obj.category||obj.cat||'other').toLowerCase()]||'other',
+          status:stMap[(obj.status||'active').toLowerCase()]||'active',
+          city:obj.city||'',
+          gov:obj.gov||obj.governorate||'',
+          company:obj.company||'',
+          person:obj.person||obj.contact||'',
+          phone:obj.phone||'',
+          email:obj.email||'',
+          date:obj.date||'',
+          surface:parseInt(obj.surface)||0,
+          rent:parseInt(obj.rent)||0,
+          fte:parseInt(obj.fte)||0,
+          kh:parseInt(obj.kh||obj['know-how']||obj.knowhow)||0,
+          mach:obj.mach||obj.machines||'',
+          works:obj.works||'',
+          capex:parseInt(obj.capex)||0,
+          notes:obj.notes||'',
+          tags:(obj.tags||'').split(';').map(function(t){return t.trim();}).filter(Boolean),
+          scores:{},
+          photos:[],
+          docs:[],
+          profile:''
+        };
+        imported.push(site);
+      }
+      if(!imported.length){toast('No valid sites found in CSV');return;}
+      var msg='Import '+imported.length+' sites from CSV?'+(skipped?' ('+skipped+' rows skipped — missing name/lat/lng)':'')+'\n\nChoose:\n- OK = ADD to existing sites\n- Cancel = do nothing';
+      if(!confirm(msg))return;
+      // Check for duplicates by name
+      var existing=[];var dupes=0;
+      for(var i=0;i<imported.length;i++){
+        var found=false;
+        for(var j=0;j<sites.length;j++){
+          if(sites[j].name.toLowerCase()===imported[i].name.toLowerCase()){
+            // Update existing
+            var existing_site=sites[j];
+            imported[i].id=existing_site.id;
+            imported[i].photos=existing_site.photos;
+            imported[i].docs=existing_site.docs;
+            imported[i].profile=existing_site.profile;
+            imported[i].scores=existing_site.scores;
+            sites[j]=imported[i];
+            found=true;dupes++;break;
+          }
+        }
+        if(!found) sites.push(imported[i]);
+      }
+      persist();renderMarkers();
+      toast('Imported '+imported.length+' sites'+(dupes?' ('+dupes+' updated, '+(imported.length-dupes)+' new)':''));
+    }catch(err){
+      console.error(err);
+      toast('Import failed: '+err.message);
+    }
+  };
+  reader.readAsText(f,'UTF-8');
+  e.target.value='';
+}
+
+function parseCSVLine(line){
+  var result=[];var cur='';var inQ=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(c==='"'){
+      if(inQ&&line[i+1]==='"'){cur+='"';i++;}
+      else inQ=!inQ;
+    } else if(c===','&&!inQ){
+      result.push(cur);cur='';
+    } else {
+      cur+=c;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+
+// Keyboard nav for carousel
+document.addEventListener('keydown',function(e){
+  if(!document.getElementById('photoOv').classList.contains('hidden')){
+    if(e.key==='ArrowLeft')carouselPrev();
+    if(e.key==='ArrowRight')carouselNext();
+    if(e.key==='Escape')closeM('photoOv');
+  }
+});
+
+window.addEventListener('DOMContentLoaded',function(){
+  loadAll();
+  var sv=localStorage.getItem(SVK);
+  if(sv){var sl=document.getElementById('savedLbl');var ss=document.getElementById('stSaved');if(sl)sl.textContent='Saved: '+sv;if(ss)ss.textContent=sv;}
+  initMap();
+  updateCounts();
+});
+</script>
+</body>
+</html>
